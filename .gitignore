@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Databases and private uploads
+*.db
+*.sqlite
+*.sqlite3
+backend/uploads/
+uploads/
+
+# Frontend
+frontend-app/node_modules/
+frontend-app/dist/
+
+# Editors and operating system
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+*.log
+
+backend/.git-backup/
+
+
+# Backup files
+backend/.git-backup/
+*backup*
+*.bak
+*.old
+
+# Private employee documents
+backend/uploads/
+uploads/
+
+# Environment and database files
+.env
+backend/.env
+backend/worksphere.db
+
+# Development backups and temporary scripts
+backend/main_before_*.py
+backend/check_users.py
