@@ -332,3 +332,94 @@ class PerformanceReview(Base):
     employee = relationship("Employee")
     reviewer = relationship("User")
 
+# ==========================================
+# MODULE 21: EMPLOYEE ONBOARDING
+# ==========================================
+
+class Onboarding(Base):
+    __tablename__ = "onboarding"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    employee_id = Column(
+        Integer,
+        ForeignKey("employees.id"),
+        nullable=False,
+        index=True,
+    )
+
+    task_name = Column(String(200), nullable=False)
+
+    status = Column(
+        String(20),
+        nullable=False,
+        default="PENDING",
+    )
+
+    due_date = Column(Date, nullable=False)
+
+    employee = relationship("Employee")
+class Resignation(Base):
+    __tablename__ = "resignations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(
+        Integer,
+        ForeignKey("employees.id"),
+        nullable=False,
+        index=True,
+    )
+    reason = Column(String(2000), nullable=False)
+    notice_period = Column(Integer, nullable=False)
+    status = Column(String(20), nullable=False, default="PENDING")
+    created_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utc_now,
+    )
+
+    employee = relationship("Employee")
+class Announcement(Base):
+    __tablename__ = "announcements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(200), nullable=False)
+    message = Column(String(5000), nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utc_now,
+    )
+
+    creator = relationship("User")
+    
+# TASK ASSIGNMENT AND TRACKING
+
+class Task(Base):
+    __tablename__ = "tasks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(200), nullable=False)
+    description = Column(String(2000), nullable=False, default="")
+    assigned_to = Column(
+        Integer,
+        ForeignKey("employees.id"),
+        nullable=False,
+        index=True,
+    )
+    assigned_by = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
+    )
+    status = Column(String(20), nullable=False, default="PENDING")
+    due_date = Column(Date, nullable=True)
+    created_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utc_now,
+    )
+
+    employee = relationship("Employee")
+    assigner = relationship("User")

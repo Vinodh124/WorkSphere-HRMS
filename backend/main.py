@@ -1,4 +1,13 @@
 import calendar
+from feedback_routes import router as feedback_router
+import logging
+from pydantic import BaseModel, EmailStr
+from email_service import send_email
+from integration_routes import router as integration_router
+from task_routes import router as task_router
+from resignation_routes import router as resignation_router
+from announcement_routes import router as announcement_router
+from onboarding_routes import router as onboarding_router
 from contextlib import asynccontextmanager
 from datetime import date, datetime
 from document_routes import router as document_router
@@ -65,8 +74,12 @@ app.include_router(document_router)
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(performance_router)
-
-
+app.include_router(onboarding_router)
+app.include_router(resignation_router)
+app.include_router(announcement_router)
+app.include_router(task_router)
+app.include_router(integration_router)
+app.include_router(feedback_router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -85,6 +98,22 @@ def normalized_role(user):
     return str(
         getattr(user.role, "value", user.role)
     ).upper()
+def send_email_safely(
+    to_email: str,
+    subject: str,
+    body: str,
+) -> None:
+    """Send an email without interrupting the HRMS workflow."""
+    if not to_email:
+        return
+
+    try:
+        send_email(to_email, subject, body)
+    except Exception:
+        logging.exception(
+            "Failed to send HRMS email to %s",
+            to_email,
+        )
 
 
 # ==================================================
@@ -229,6 +258,20 @@ def create_employee(
     db.add(new_employee)
     db.commit()
     db.refresh(new_employee)
+    send_email_safely(
+    employee.email,
+    "WorkSphere HRMS - Leave Request Submitted",
+    (
+        f"Hello {employee.full_name},\n\n"
+        "Your leave request has been submitted successfully.\n\n"
+        f"Leave type: {new_leave.leave_type}\n"
+        f"Start date: {new_leave.start_date}\n"
+        f"End date: {new_leave.end_date}\n"
+        f"Status: {new_leave.status}\n\n"
+        "Regards,\nWorkSphere HRMS"
+    ),
+)
+
 
     return new_employee
 
@@ -972,6 +1015,46 @@ def apply_for_leave(
 
     return new_leave
 
+    db.commit()
+    db.refresh(new_leave)
+
+    # Send confirmation email to the employee
+    send_email_safely(
+        employee.email,
+        "WorkSphere HRMS - Leave Request Submitted",
+        (
+            f"Hello {employee.full_name},\n\n"
+            "Your leave request has been submitted successfully.\n\n"
+            f"Leave type: {new_leave.leave_type}\n"
+            f"Start date: {new_leave.start_date}\n"
+            f"End date: {new_leave.end_date}\n"
+            f"Status: {new_leave.status}\n\n"
+            "You will receive another email when HR reviews your request.\n\n"
+            "Regards,\nWorkSphere HRMS"
+        ),
+    )
+
+    # Send notification emails to HR and Admin
+    for recipient in hr_admin_users:
+        send_email_safely(
+            recipient.email,
+            "WorkSphere HRMS - New Leave Request",
+            (
+                "A new leave request requires review.\n\n"
+                f"Employee: {employee.full_name}\n"
+                f"Employee email: {employee.email}\n"
+                f"Leave type: {new_leave.leave_type}\n"
+                f"Start date: {new_leave.start_date}\n"
+                f"End date: {new_leave.end_date}\n"
+                f"Reason: {new_leave.reason}\n"
+                f"Status: {new_leave.status}\n\n"
+                "Please log in to WorkSphere HRMS to review the request."
+            ),
+        )
+
+    return new_leave
+
+
 
 @app.get(
     "/leaves/",
@@ -1652,3 +1735,21 @@ def get_leave_calendar(
         }
         for leave in leaves
     ]
+class TestEmailRequest(BaseModel):
+    to_email: EmailStr
+
+
+@app.post("/test-email", tags=["Email"])
+def test_email(payload: TestEmailRequest):
+    try:
+        send_email(
+            payload.to_email,
+            "WorkSphere HRMS Email Test",
+            "Your WorkSphere HRMS email service is working.",
+        )
+        return {"message": "Email request accepted by Resend."}
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Email sending failed: {str(exc)}",
+        )

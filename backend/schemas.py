@@ -265,3 +265,91 @@ class UserRoleUpdate(BaseModel):
 
 class UserStatusUpdate(BaseModel):
     is_active: bool
+
+# ==========================================
+# MODULE 21: EMPLOYEE ONBOARDING SCHEMAS
+# ==========================================
+
+from datetime import date
+from pydantic import BaseModel, Field, ConfigDict
+from typing import Literal
+
+
+class OnboardingCreate(BaseModel):
+    employee_id: int = Field(gt=0)
+    task_name: str = Field(min_length=2, max_length=200)
+    due_date: date
+
+
+class OnboardingStatusUpdate(BaseModel):
+    status: Literal["PENDING", "COMPLETED"]
+
+
+class OnboardingResponse(BaseModel):
+    id: int
+    employee_id: int
+    task_name: str
+    status: str
+    due_date: date
+
+    model_config = ConfigDict(from_attributes=True)
+    # RESIGNATION SCHEMAS
+
+class ResignationCreate(BaseModel):
+    reason: str = Field(min_length=5, max_length=2000)
+    notice_period: int = Field(ge=0, le=365)
+
+
+class ResignationStatusUpdate(BaseModel):
+    status: Literal["APPROVED", "REJECTED"]
+
+
+class ResignationResponse(BaseModel):
+    id: int
+    employee_id: int
+    reason: str
+    notice_period: int
+    status: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+    # ANNOUNCEMENT SCHEMAS
+
+class AnnouncementCreate(BaseModel):
+    title: str = Field(min_length=3, max_length=200)
+    message: str = Field(min_length=1, max_length=5000)
+
+
+class AnnouncementResponse(BaseModel):
+    id: int
+    title: str
+    message: str
+    created_by: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+    
+# TASK ASSIGNMENT AND TRACKING SCHEMAS
+
+class TaskCreate(BaseModel):
+    title: str = Field(min_length=3, max_length=200)
+    description: str = Field(default="", max_length=2000)
+    assigned_to: int = Field(gt=0)
+    due_date: date | None = None
+
+
+class TaskStatusUpdate(BaseModel):
+    status: Literal["PENDING", "IN_PROGRESS", "COMPLETED"]
+
+
+class TaskResponse(BaseModel):
+    id: int
+    title: str
+    description: str
+    assigned_to: int
+    assigned_by: int
+    status: str
+    due_date: date | None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
